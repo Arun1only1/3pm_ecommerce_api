@@ -1,6 +1,7 @@
 import express from "express";
 import { dbConnect } from "./db.connection.js";
 import userRoutes from "./user/user.route.js";
+import productRoutes from "./product/product.route.js";
 
 const app = express();
 // to make app understand json
@@ -11,6 +12,7 @@ dbConnect();
 
 // register routes
 app.use(userRoutes);
+app.use(productRoutes);
 
 const port = process.env.PORT;
 

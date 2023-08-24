@@ -79,7 +79,7 @@ export const loginUser = async (req, res) => {
     { email: user.email },
     process.env.JWT_ACCESS_TOKEN_SECRET_KEY,
     {
-      expiresIn: "1d",
+      expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY,
     }
   );
 
