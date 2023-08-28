@@ -1,7 +1,10 @@
 import express from "express";
-import { isSeller, isUser } from "../auth/auth.middleware.js";
+import { isBuyer, isSeller, isUser } from "../auth/auth.middleware.js";
 import { Product } from "./product.model.js";
-import { addProductValidationSchema } from "./product.validation.js";
+import {
+  addProductValidationSchema,
+  paginationDetailValidationSchema,
+} from "./product.validation.js";
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -93,4 +96,88 @@ router.get("/product/details/:id", isUser, async (req, res) => {
   // return product
   return res.status(200).send(product);
 });
+
+// get products
+// seller point of view
+router.post("/product/seller/all", isSeller, async (req, res) => {
+  // extract pagination details from req.body
+  const paginationDetails = req.body;
+
+  //validate pagination details
+  try {
+    await paginationDetailValidationSchema.validateAsync(paginationDetails);
+  } catch (error) {
+    // if not valid, terminate
+    return res.status(400).send({ message: error.message });
+  }
+
+  // calculate skip
+  const skip = (paginationDetails.page - 1) * paginationDetails.limit;
+
+  // start find query
+  const products = await Product.aggregate([
+    {
+      $match: {
+        sellerId: req.loggedInUser._id,
+      },
+    },
+    {
+      $skip: skip,
+    },
+    {
+      $limit: paginationDetails.limit,
+    },
+    {
+      $project: {
+        name: 1,
+        price: 1,
+        company: 1,
+      },
+    },
+  ]);
+
+  return res.status(200).send(products);
+});
+
+// get products
+// buyer point of view
+router.post("/product/buyer/all", isBuyer, async (req, res) => {
+  // extract pagination details from req.body
+  const paginationDetails = req.body;
+
+  //validate pagination details
+  try {
+    await paginationDetailValidationSchema.validateAsync(paginationDetails);
+  } catch (error) {
+    // if not valid, terminate
+    return res.status(400).send({ message: error.message });
+  }
+
+  // calculate skip
+  // skip=(page-1)* limit
+  const skip = (paginationDetails.page - 1) * paginationDetails.limit;
+
+  const products = await Product.aggregate([
+    {
+      $match: {},
+    },
+    {
+      $skip: skip,
+    },
+    {
+      $limit: paginationDetails.limit,
+    },
+    {
+      $project: {
+        name: 1,
+        price: 1,
+        company: 1,
+      },
+    },
+  ]);
+
+  return res.status(200).send(products);
+});
+
+// TODO:edit product
 export default router;
