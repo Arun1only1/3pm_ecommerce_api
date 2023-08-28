@@ -14,9 +14,15 @@ export const addProductValidationSchema = Joi.object({
       "electronics",
       "furniture",
       "bakery",
-      "liquor"
+      "liquor",
+      "sports"
     ),
   freeShipping: Joi.boolean(),
   quantity: Joi.number().required().min(1).integer(),
   color: Joi.array().items(Joi.string().lowercase()),
+});
+
+export const paginationDetailValidationSchema = Joi.object({
+  page: Joi.number().integer().required().min(1),
+  limit: Joi.number().integer().required().min(1),
 });
