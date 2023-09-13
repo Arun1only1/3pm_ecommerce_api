@@ -172,6 +172,7 @@ router.post("/product/buyer/all", isBuyer, async (req, res) => {
         name: 1,
         price: 1,
         company: 1,
+        description: 1,
       },
     },
   ]);
