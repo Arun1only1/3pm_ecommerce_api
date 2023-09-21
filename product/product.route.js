@@ -192,7 +192,12 @@ router.post("/product/buyer/all", isBuyer, async (req, res) => {
     },
   ]);
 
-  return res.status(200).send(products);
+  // calculate total page
+  const totalProducts = await Product.find({}).count();
+
+  const totalPage = Math.ceil(totalProducts / paginationDetails.limit);
+
+  return res.status(200).send({ products, totalPage });
 });
 
 // TODO:edit product
