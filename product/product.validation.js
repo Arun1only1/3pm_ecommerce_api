@@ -5,7 +5,7 @@ export const addProductValidationSchema = Joi.object({
   company: Joi.string().required().trim().min(2).max(55),
   price: Joi.number().required().min(0),
   image: Joi.string().trim(),
-  description: Joi.string().required().trim().min(300).max(1000),
+  description: Joi.string().required().trim().min(200).max(1000),
   category: Joi.string()
     .required()
     .trim()

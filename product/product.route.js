@@ -122,6 +122,11 @@ router.post("/product/seller/all", isSeller, async (req, res) => {
       },
     },
     {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+    {
       $skip: skip,
     },
     {
@@ -132,11 +137,21 @@ router.post("/product/seller/all", isSeller, async (req, res) => {
         name: 1,
         price: 1,
         company: 1,
+        description: 1,
+        category: 1,
       },
     },
   ]);
 
-  return res.status(200).send(products);
+  // total products
+  const totalMatchingProduct = await Product.find({
+    sellerId: req.loggedInUser._id,
+  }).count();
+
+  // page calculation
+  const totalPage = Math.ceil(totalMatchingProduct / paginationDetails.limit);
+
+  return res.status(200).send({ products, totalPage });
 });
 
 // get products

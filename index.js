@@ -10,7 +10,7 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 // db connection
-dbConnect();
+await dbConnect();
 
 // register routes
 app.use(userRoutes);
