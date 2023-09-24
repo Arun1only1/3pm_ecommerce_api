@@ -201,4 +201,45 @@ router.post("/product/buyer/all", isBuyer, async (req, res) => {
 });
 
 // TODO:edit product
+
+router.put("/product/edit/:id", isSeller, async (req, res) => {
+  const productId = req.params.id;
+  const newValues = req.body;
+
+  // validate id for mongo id validity
+  const isValidMongoId = mongoose.Types.ObjectId.isValid(productId);
+
+  if (!isValidMongoId) {
+    return res.status(400).send({ message: "Invalid mongo id." });
+  }
+
+  // validate newValues from req.body
+
+  try {
+    await addProductValidationSchema.validateAsync(newValues);
+  } catch (error) {
+    return res.status(400).send({ message: error.message });
+  }
+
+  // check for product existence using productId
+  const product = await Product.findOne({ _id: productId });
+
+  if (!product) {
+    return res.status(404).send({ message: "Product does not exist." });
+  }
+
+  // check if logged in user is owner of product
+  const isOwnerOfProduct = product.sellerId.equals(req.loggedInUser._id);
+
+  if (!isOwnerOfProduct) {
+    return res
+      .status(403)
+      .send({ message: "You are not owner of this product." });
+  }
+
+  // update product
+  await Product.updateOne({ _id: productId }, newValues);
+
+  return res.status(200).send({ message: "Product updated successfully." });
+});
 export default router;
