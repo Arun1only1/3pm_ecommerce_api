@@ -2,6 +2,8 @@ import express from "express";
 import { dbConnect } from "./db.connection.js";
 import userRoutes from "./user/user.route.js";
 import productRoutes from "./product/product.route.js";
+import cartRoutes from "./cart/cart.routes.js";
+
 import cors from "cors";
 const app = express();
 
@@ -15,6 +17,7 @@ await dbConnect();
 // register routes
 app.use(userRoutes);
 app.use(productRoutes);
+app.use(cartRoutes);
 
 // allow cors
 // CORS => Cross Origin Resource Sharing

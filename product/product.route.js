@@ -3,6 +3,7 @@ import { isBuyer, isSeller, isUser } from "../auth/auth.middleware.js";
 import { Product } from "./product.model.js";
 import {
   addProductValidationSchema,
+  buyerProductListValidationSchema,
   paginationDetailValidationSchema,
 } from "./product.validation.js";
 import mongoose from "mongoose";
@@ -114,12 +115,21 @@ router.post("/product/seller/all", isSeller, async (req, res) => {
   // calculate skip
   const skip = (paginationDetails.page - 1) * paginationDetails.limit;
 
+  // extract searchText
+  const searchText = paginationDetails?.searchText;
+
+  let match = {};
+
+  match.sellerId = req.loggedInUser._id;
+
+  if (searchText) {
+    match.name = { $regex: searchText, $options: "i" };
+  }
+
   // start find query
   const products = await Product.aggregate([
     {
-      $match: {
-        sellerId: req.loggedInUser._id,
-      },
+      $match: match,
     },
     {
       $sort: {
@@ -139,6 +149,7 @@ router.post("/product/seller/all", isSeller, async (req, res) => {
         company: 1,
         description: 1,
         category: 1,
+        image: 1,
       },
     },
   ]);
@@ -158,11 +169,11 @@ router.post("/product/seller/all", isSeller, async (req, res) => {
 // buyer point of view
 router.post("/product/buyer/all", isBuyer, async (req, res) => {
   // extract pagination details from req.body
-  const paginationDetails = req.body;
+  const input = req.body;
 
   //validate pagination details
   try {
-    await paginationDetailValidationSchema.validateAsync(paginationDetails);
+    await buyerProductListValidationSchema.validateAsync(input);
   } catch (error) {
     // if not valid, terminate
     return res.status(400).send({ message: error.message });
@@ -170,17 +181,41 @@ router.post("/product/buyer/all", isBuyer, async (req, res) => {
 
   // calculate skip
   // skip=(page-1)* limit
-  const skip = (paginationDetails.page - 1) * paginationDetails.limit;
+  const skip = (input.page - 1) * input.limit;
+
+  // extract searchText
+  let searchText = input?.searchText;
+  let minPrice = input?.minPrice;
+  let maxPrice = input?.maxPrice;
+  let category = input?.category;
+
+  let match = {};
+
+  if (searchText) {
+    match.name = { $regex: searchText, $options: "i" };
+  }
+
+  if (minPrice) {
+    match.price = { $gte: minPrice };
+  }
+
+  if (maxPrice) {
+    match.price = { ...match.price, $lte: maxPrice };
+  }
+
+  if (category?.length > 0) {
+    match.category = { $in: category };
+  }
 
   const products = await Product.aggregate([
     {
-      $match: {},
+      $match: match,
     },
     {
       $skip: skip,
     },
     {
-      $limit: paginationDetails.limit,
+      $limit: input.limit,
     },
     {
       $project: {
@@ -188,20 +223,20 @@ router.post("/product/buyer/all", isBuyer, async (req, res) => {
         price: 1,
         company: 1,
         description: 1,
+        image: 1,
       },
     },
   ]);
 
   // calculate total page
-  const totalProducts = await Product.find({}).count();
+  const totalProducts = await Product.find(match).count();
 
-  const totalPage = Math.ceil(totalProducts / paginationDetails.limit);
+  const totalPage = Math.ceil(totalProducts / input.limit);
 
   return res.status(200).send({ products, totalPage });
 });
 
-// TODO:edit product
-
+// edit product
 router.put("/product/edit/:id", isSeller, async (req, res) => {
   const productId = req.params.id;
   const newValues = req.body;
@@ -241,5 +276,29 @@ router.put("/product/edit/:id", isSeller, async (req, res) => {
   await Product.updateOne({ _id: productId }, newValues);
 
   return res.status(200).send({ message: "Product updated successfully." });
+});
+
+// get latest 6 products
+router.get("/product/latest", isUser, async (req, res) => {
+  const products = await Product.aggregate([
+    { $match: {} },
+    {
+      $sort: { createdAt: -1 },
+    },
+    {
+      $limit: 6,
+    },
+    {
+      $project: {
+        name: 1,
+        description: 1,
+        company: 1,
+        price: 1,
+        image: 1,
+      },
+    },
+  ]);
+
+  return res.status(200).send(products);
 });
 export default router;

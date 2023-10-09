@@ -27,4 +27,30 @@ export const addProductValidationSchema = Joi.object({
 export const paginationDetailValidationSchema = Joi.object({
   page: Joi.number().integer().required().min(1),
   limit: Joi.number().integer().required().min(1),
+  searchText: Joi.string().trim().allow(""),
+});
+
+export const buyerProductListValidationSchema = Joi.object({
+  page: Joi.number().integer().required().min(1),
+  limit: Joi.number().integer().required().min(1),
+  searchText: Joi.string().trim().allow(""),
+  minPrice: Joi.number().min(0),
+  maxPrice: Joi.number().min(0),
+  category: Joi.array()
+    .allow(null)
+    .items(
+      Joi.string()
+        .required()
+        .trim()
+        .valid(
+          "grocery",
+          "kitchen",
+          "clothing",
+          "electronics",
+          "furniture",
+          "bakery",
+          "liquor",
+          "sports"
+        )
+    ),
 });
